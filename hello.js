@@ -13,51 +13,40 @@ const PORT = 3333
 require('dotenv').config()
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID
 
-const provider = new ethers.providers.InfuraProvider(
-  'rinkeby',
-  INFURA_PROJECT_ID
-)
+// timer middleware
+const timer = (req, res, next) => {
+  const date = new Date()
+  req.requestDate = date.toUTCString()
+  next()
+}
 
-// async file logger
+// logger middleware
 const logger = async (req, res, next) => {
   try {
-    const date = new Date()
-    const log = `${date.toUTCString()} ${req.method} "${
-      req.originalUrl
-    }" from ${req.ip} ${req.headers['user-agent']}\n`
+    const log = `${req.requestDate} ${req.method} "${req.originalUrl}" from ${req.ip} ${req.headers['user-agent']}\n`
     await fsPromises.appendFile(LOG_FILE, log, 'utf-8')
-    next()
   } catch (e) {
     console.error(`Error: can't write in ${LOG_FILE}`)
-    res.status(500).send()
+  } finally {
+    next()
   }
 }
 
-// show on console
+// shower middleware
 const shower = async (req, res, next) => {
-  const date = new Date()
-  const log = `${date.toUTCString()} ${req.method} "${req.originalUrl}" from ${
-    req.ip
-  } ${req.headers['user-agent']}`
+  const log = `${req.requestDate} ${req.method} "${req.originalUrl}" from ${req.ip} ${req.headers['user-agent']}`
   console.log(log)
   next()
 }
 
 const app = express()
 
+app.use(timer)
 app.use(logger)
 app.use(shower)
 app.use('/wiki', wiki)
-
-// GET sur la racine
-app.get('/', (req, res) => {
-  res.send(`Welcome ${req.ip} to my first express app.`)
-})
-
-// POST sur la racine
-app.post('/', (req, res) => {
-  res.send("Sorry we don't post requests yet.")
-})
+//serve our static files from public directory at "/" route
+app.use(express.static(path.join(__dirname, 'public')))
 
 // GET sur '/hello'
 app.get('/hello', (req, res) => {

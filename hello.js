@@ -89,17 +89,20 @@ app.get('/cmd/:cmd', (req, res) => {
   })
 })
 
-app.get('/balance/:address', async (req, res) => {
+app.get('/balance/:chainId/:address', async (req, res) => {
+  const chainId = Number(req.params.chainId)
   const ethAddress = req.params.address
+  const provider = new ethers.providers.InfuraProvider(chainId)
   if (!ethers.utils.isAddress(ethAddress)) {
     res.status(400).send(`Error: ${ethAddress} is not a valid Ethereum address`)
-  }
-  try {
-    const balance = await provider.getBalance(req.params.address)
-    res.send(ethers.utils.formatEther(balance))
-  } catch (e) {
-    console.error('Error: can not access Infura')
-    res.status(500).send()
+  } else {
+    try {
+      const balance = await provider.getBalance(ethAddress)
+      res.send(ethers.utils.formatEther(balance))
+    } catch (e) {
+      console.error('Error: can not access Infura')
+      res.status(500).send()
+    }
   }
 })
 

@@ -115,7 +115,10 @@ app.get('/cmd/:cmd', (req, res) => {
 app.get('/balance/:chainId/:address', async (req, res) => {
   const chainId = Number(req.params.chainId)
   const ethAddress = req.params.address
-  const provider = new ethers.providers.InfuraProvider(chainId)
+  const provider = new ethers.providers.InfuraProvider(
+    chainId,
+    INFURA_PROJECT_ID
+  )
   if (!ethers.utils.isAddress(ethAddress)) {
     res.status(400).send(`Error: ${ethAddress} is not a valid Ethereum address`)
   } else {

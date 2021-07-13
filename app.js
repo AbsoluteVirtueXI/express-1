@@ -11,6 +11,13 @@ const IP_LOOPBACK = 'localhost'
 const IP_LOCAL = '192.168.0.10' // my local ip on my network
 const PORT = 3333
 
+// Our user database
+const db_user = {
+  alice: '123',
+  bob: '456',
+  charlie: '789',
+}
+
 require('dotenv').config()
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID
 
@@ -40,14 +47,40 @@ const shower = async (req, res, next) => {
   next()
 }
 
+// Middleware for checking if user exists
+const userChecker = (req, res, next) => {
+  const username = req.body.username
+  if (db_user.hasOwnProperty(username)) {
+    next()
+  } else {
+    res.status(401).send('Username or password invalid.')
+  }
+}
+
+// Middleware for checking if password is correct
+const passwordChecker = (req, res, next) => {
+  const username = req.body.username
+  const password = req.body.password
+  if (db_user[username] === password) {
+    next()
+  } else {
+    res.status(401).send('Username or password invalid.')
+  }
+}
+
 const app = express()
 
+app.use(express.urlencoded({ extended: false })) // to support URL-encoded bodies
+app.use(express.json()) // to support JSON-encoded bodies
 app.use(timer)
 app.use(logger)
 app.use(shower)
 app.use('/wiki', wiki)
 //serve our static files from public directory at "/" route
 app.use(express.static(path.join(__dirname, 'public')))
+// Configure express to use these 2 middlewares for /login route only
+app.use('/login', userChecker)
+app.use('/login', passwordChecker)
 
 // GET sur '/hello'
 app.get('/hello', (req, res) => {
@@ -94,6 +127,20 @@ app.get('/balance/:chainId/:address', async (req, res) => {
       res.status(500).send()
     }
   }
+})
+
+// Create route /login for POST method
+// we are waiting for a POST request with a body containing a json data
+/*
+format de json attendu:
+{
+    "username": "alice",
+    "password" : "123"
+}
+*/
+app.post('/login', (req, res) => {
+  let username = req.body.username
+  res.send(`Welcome to your dashboard ${username}`)
 })
 
 // start the server
